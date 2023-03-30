@@ -1,0 +1,9 @@
+{
+    "entryPoints": [ 
+        "src/types.ts" 
+    ],
+    "out": "docs",
+    "hideGenerator":true,
+    "plugin":"none",
+    "toc":[  ]
+}

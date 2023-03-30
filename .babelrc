@@ -1,0 +1,60 @@
+{
+    "exclude": [
+        "node_modules"
+    ],
+    "presets": [
+        [
+            "@babel/typescript",
+            {
+                "allowDeclareFields": true
+            }
+        ],
+        [
+            "@babel/preset-env",
+            {
+                "targets": {
+                    "node": "current"
+                }
+            }
+        ],
+        "@babel/preset-react"
+    ],
+    "plugins": [
+        [
+            "babel-plugin-named-asset-import",
+            {
+                "loaderMap": {
+                    "svg": {
+                        "ReactComponent": "@svgr/webpack?-svgo![path]"
+                    }
+                }
+            }
+        ],
+        "@babel/plugin-proposal-object-rest-spread",
+        "@babel/plugin-syntax-dynamic-import",
+        [
+            "@babel/plugin-proposal-class-properties",
+            {
+                "loose": true
+            }
+        ],
+        "react-loadable/babel",
+        "babel-plugin-transform-object-assign",
+        [
+            "@babel/plugin-proposal-decorators",
+            {
+                "legacy": true
+            }
+        ],
+        "@babel/plugin-proposal-optional-chaining",
+        [
+            "import",
+            {
+                "libraryName": "antd",
+                "libraryDirectory": "es",
+                "style": "css"
+            },
+            "ant"
+        ]
+    ]
+}
