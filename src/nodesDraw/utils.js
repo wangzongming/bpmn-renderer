@@ -18,7 +18,7 @@ import {
     innerSVG
 } from 'tiny-svg';
 import { assign } from 'min-dash';
-// import { is, getBusinessObject } from 'bpmn-js/lib/util/ModelUtil';
+import { isAny, is, getBusinessObject } from 'bpmn-js/lib/util/ModelUtil';
 import { getLabel } from 'bpmn-js/lib/features/label-editing/LabelUtil';
 
 /**
@@ -45,14 +45,15 @@ export function drawRect({ parentGfx, element, nodeStatus, baseStyle = {}, style
         case "diamond": // 菱形
             pathData = getDiamondPath(assign({}, element, { x: startX, y: startY }));
             break;
-        default: // 默认绘制正方形
-            pathData = getRoundRectPath(assign({}, element, { x: startX, y: startY, width, height }), borderRadius);
+        default:
+            // 默认绘制正方形, 这里的宽高度要进行有些兼容，不然现有数据的宽高和设置宽高不一致会导致渲染错位
+            let rectStyle = { x: startX, y: startY, width, height };
+            if (width !== element.width) {
+                rectStyle = { x: startX, y: startY };
+            }
+            pathData = getRoundRectPath(assign({}, element, rectStyle), borderRadius);
             break;
     }
-    // const bo = getBusinessObject(element); 
-    // if (is(bo, 'bpmn:UserTask')) {
-    //     console.log("parentGfx", parentGfx.parentElement) 
-    // }
 
     /** 元素绘制、外框边框和背景绘制 **/
     const newSvg = svgCreate("path", {
@@ -69,7 +70,14 @@ export function drawRect({ parentGfx, element, nodeStatus, baseStyle = {}, style
     svgAttr(svgBorder, { fill: backgroundColor, width: width + borderWidth * 2, height: height + borderWidth * 2, });
     const filter = svgCreate('filter', { id: `${id}_shadow` });
     const feOffset = svgCreate('feOffset', { result: "offOut", in: "SourceGraphic", dx: "0", dy: "0" });
-    const feColorMatrix = svgCreate('feColorMatrix', { result: "matrixOut", in: "offOut", type: 'matrix', values: "0.08 0 0 0 0 0 0.2 0 0 0 0 0 0.2 0 0 0 0 0 1 0" });
+    const feColorMatrix = svgCreate('feColorMatrix', {
+        result: "matrixOut", in: "offOut", type: 'matrix', values: `
+        0.1 0.5 0 0 0 
+        0 0.2 0 0 0 0 
+        0 0.2 0 0 0 0 
+        0 1 0
+    ` });
+    // const feColorMatrix = svgCreate('feColorMatrix', { result: "matrixOut", in: "offOut", type: 'matrix', values: "0.08 0 0 0 0 0 0.2 0 0 0 0 0 0.2 0 0 0 0 0 1 0" });
     const feGaussianBlur = svgCreate('feGaussianBlur', { result: "blurOut", in: "matrixOut", stdDeviation: boxShadowSize });
     const feBlend = svgCreate('feBlend', { in: "SourceGraphic", in2: "blurOut", mode: "normal" });
     svgAppend(filter, feOffset);
@@ -83,12 +91,16 @@ export function drawRect({ parentGfx, element, nodeStatus, baseStyle = {}, style
     /** 闪动动画 **/
     if (nodeStatus === "ing") {
         const aniSvg = svgCreate("animate");
-        svgAttr(aniSvg, { attributeName: "stdDeviation", values: "1;6;1", dur: "2s", repeatCount: "indefinite" })
+        svgAttr(aniSvg, { attributeName: "stdDeviation", values: "1;10;1", dur: "2s", repeatCount: "indefinite" })
         svgAppend(feGaussianBlur, aniSvg);
     }
 
     /** 小图标绘制 **/
-    drawerIcon({ parentGfx, element, iconConfig, centered: iconCentered })
+    drawerIcon({ parentGfx, element, iconConfig, centered: iconCentered });
+
+    /** multiInstanceLoopCharacteristics  standardLoopCharacteristics 绘制**/
+    drawerLoopCharacteristicsIcon({ parentGfx, element, iconConfig, centered: iconCentered, width, height })
+
     return newSvg;
 }
 
@@ -141,14 +153,29 @@ export function drawCircle(arg) {
     return drawRect({ ...arg, drawType: "circle" })
 }
 
-export const renderLabel = (parentGfx, label, options, thisContext, styleConfig) => {
-    options = assign({
-        size: { width: 100 },
-    }, options);
+/**
+ * 所有文字的绘制
+*/
+export const renderLabel = (element, parentGfx, label, options, thisContext, styleConfig) => {
+    const { fontSize = 12, textPosition } = styleConfig;
+    options = assign({ size: { width: 100 } }, options);
     const text = thisContext.textRenderer.createText(label || '', options);
 
     svgClasses(text).add('djs-label');
     svgAppend(parentGfx, text);
+
+    if (isAny(element, ["bpmn:Task", "bpmn:StartEvent"])) {
+        if (textPosition === "bottom") {
+            svgAttr(svgSelect(text, "tspan"), {
+                // y: is(element, "bpmn:StartEvent") ? options.box.height * 2 + 18 : options.box.height + 18
+                y: is(element, "bpmn:StartEvent") ? 12 : options.box.height + 18,
+                x: label?.length ? -(label.length / 2 * parseInt(fontSize) - element.width / 2) : 0
+            })
+        }
+        if (textPosition === "top") {
+            svgAttr(svgSelect(text, "tspan"), { y: -18 })
+        }
+    }
 
     return text;
 }
@@ -159,12 +186,23 @@ export const renderLabel = (parentGfx, label, options, thisContext, styleConfig)
 export const renderEmbeddedLabel = ({ parentGfx, element, align, thisContext, styleConfig, bounds }) => {
     const { color, fontSize = 12, fontFamily = "" } = styleConfig;
     const semantic = getSemantic(element);
+    // 
+    const box = { ...(bounds || element) };
+    const boxOtherStyle = {};
+    let _align = align;
     // 备注是存到了 text 中
-    return renderLabel(parentGfx, semantic.name || semantic.text, {
-        box: bounds || element,
-        align,
-        padding: 5,
+    return renderLabel(element, parentGfx, semantic.name || semantic.text, {
+        box: {
+            ...box,
+            ...boxOtherStyle,
+
+            // 固定设置，避免 box k宽度太小了会导致文字折行
+            width: 100,
+        },
+        // fitBox: true,
+        align: _align,
         style: {
+            textAlign: "center",
             fontSize, fontFamily,
             fill: getStrokeColor(element, color)
         }
@@ -178,15 +216,16 @@ export const renderEmbeddedLabel = ({ parentGfx, element, align, thisContext, st
 export const renderExternalLabel = ({ parentGfx, element, thisContext, styleConfig }) => {
     const { color, fontSize = 12, fontFamily = "" } = styleConfig;
     const box = {
-        width: 90,
+        width: 100,
         height: 30,
         x: element.width / 2 + element.x,
         y: element.height / 2 + element.y
     };
     const target = element.labelTarget;
-    const align = target?.y > element?.y ? 'center-bottom' : 'center-top';
+    let align = target?.y > element?.y ? 'center-bottom' : 'center-top';
 
-    return renderLabel(parentGfx, getLabel(element), {
+
+    return renderLabel(element, parentGfx, getLabel(element), {
         box: box,
         align: align,
         fitBox: true,
@@ -208,7 +247,7 @@ export function drawerIcon({ parentGfx, element, iconConfig, centered }) {
     const { type, width, height } = element;
 
     const privateIconConfig = iconConfig[type];
-    const { color: svgColor, width: svgWidth, height: svgHeight, left: svgLeft, top: svgTop, svgs = {} } = {
+    const { center, color: svgColor, width: svgWidth, height: svgHeight, left: svgLeft, top: svgTop, svgs = {} } = {
         ...iconConfig,
         ...privateIconConfig
     };
@@ -222,13 +261,63 @@ export function drawerIcon({ parentGfx, element, iconConfig, centered }) {
         const attrs = {
             width: svgWidth, height: svgHeight, fill: svgColor, x: svgLeft, y: svgTop
         };
-        if (centered) {
+        if (centered || center) {
             attrs.x = width / 2 - parseInt(svgWidth) / 2;
             attrs.y = height / 2 - parseInt(svgHeight) / 2;
         }
         svgAttr(ele, attrs)
     })
 }
+
+/**
+ * 给元素绘制事件图表
+*/
+export function drawerLoopCharacteristicsIcon({ parentGfx, element, iconConfig, width, height }) {
+    const businessObject = getBusinessObject(element);
+    const { type } = element;
+    const privateIconConfig = iconConfig[type];
+    const { center, color: svgColor } = {
+        ...iconConfig,
+        ...privateIconConfig
+    };
+    if (businessObject.loopCharacteristics) {
+        const { loopCharacteristics } = businessObject;
+        // 加个壳子方便设置样式, 图标居中时小图标放到左上角 
+        const iconSvg = svgCreate("svg", center ? { x: width / 2 - 7, y: -(height - 19) } : {});
+        let LoopcharacteristicsPath;
+        const iconStyle = `fill: none;stroke-width:2;stroke:${svgColor};scale:${center ? "0.80" : "0"}`;
+        if (loopCharacteristics.$type === "bpmn:MultiInstanceLoopCharacteristics") {
+            if (!loopCharacteristics.isSequential) {
+                // 横着画三条杠
+                LoopcharacteristicsPath = svgCreate("path", {
+                    d: "m24,40 m 3,2 l 0,10 m 3,-10 l 0,10 m 3,-10 l 0,10",
+                    style: iconStyle
+                });
+                svgAppend(iconSvg, LoopcharacteristicsPath);
+            } else {
+                // 竖着画三条杠
+                // console.log('businessObject', loopCharacteristics.$type, loopCharacteristics);
+                LoopcharacteristicsPath = svgCreate("path", {
+                    d: "m27,41 m 0,3 l 10,0 m -10,3 l 10,0 m -10,3 l 10,0",
+                    style: iconStyle,
+                });
+                svgAppend(iconSvg, LoopcharacteristicsPath);
+            }
+        } else if (loopCharacteristics.$type === "bpmn:StandardLoopCharacteristics") {
+            // 画一个循环符号
+            LoopcharacteristicsPath = svgCreate("path", {
+                d: "m 30,53 c 3.526979,0 6.386161,-2.829858 6.386161,-6.320661 0,-3.490806 -2.859182,-6.320661 -6.386161,-6.320661 -3.526978,0 -6.38616,2.829855 -6.38616,6.320661 0,1.745402 0.714797,3.325567 1.870463,4.469381 0.577834,0.571908 1.265885,1.034728 2.029916,1.35457 l -0.718163,-3.909793 m 0.718163,3.909793 -3.885211,0.802902",
+                style: iconStyle
+            });
+            svgAppend(iconSvg, LoopcharacteristicsPath);
+        }
+
+        svgAppend(parentGfx, iconSvg);
+
+    }
+
+}
+
 
 /**
  * 绘制箭头路径
@@ -252,14 +341,16 @@ export function drawPath({ parentGfx, element, thisContext, arrowsConfig }) {
     const markId = `bpmn-renderer-${id}_marker`
     const markerDef = svgCreate("defs");
     innerSVG(markerDef, `
-        <marker id='${markId}' markerWidth='${arrowsWidth}' markerHeight='${arrowsHeight}px' orient='auto'>
-            <path d='M2,2 L2,11 L10,6 L2,2' style='fill:${backgroundColor}' />
+        <marker id='${markId}' markerWidth='${arrowsWidth}' markerHeight='${arrowsHeight}' orient='auto'>
+            <path d='M0,0 L0,${arrowsHeight} L${arrowsWidth},${arrowsHeight / 2} L0,0' style='fill:${backgroundColor}' />
         </marker>
     `);
     svgAppend(parentGfx, markerDef);
     const markerEle = svgSelect(markerDef, "marker");
     svgAttr(markerEle, {
-        refX: (arrowsWidth - 2),
+        markerWidth: arrowsWidth,
+        arrowsHeight: arrowsHeight,
+        refX: (arrowsWidth),
         refY: arrowsHeight / 2,
     })
 

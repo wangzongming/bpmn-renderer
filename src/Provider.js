@@ -5,10 +5,8 @@ import BaseRenderer from 'diagram-js/lib/draw/BaseRenderer';
  * 参见案例
  * https://github.com/bpmn-io/bpmn-js-sketchy/blob/master/lib/SketchyRenderer.js
 */
-import { is } from 'bpmn-js/lib/util/ModelUtil';
-// import { isAny } from 'bpmn-js/lib/features/modeling/util/ModelingUtil';
+import { is } from 'bpmn-js/lib/util/ModelUtil'; 
 import { getCirclePath, getRoundRectPath, getDiamondPath, getRectPath } from 'bpmn-js/lib/draw/BpmnRenderUtil';
-
 import { merge } from 'min-dash';
 import nodesDraw from './nodesDraw'
 import defaultStyle from './defaultStyle'
@@ -77,7 +75,7 @@ function CustomRendererFn({ nodesInfo = {}, style = {} }) {
                 getEleStyle: this.getEleStyle.bind(this),
                 thisContext: this.thisContext
             })[type];
-            if (h) {
+            if (h) {  
                 return h(parentNode, element);
             } else {
                 return this.bpmnRenderer.drawShape(parentNode, element);
@@ -85,6 +83,7 @@ function CustomRendererFn({ nodesInfo = {}, style = {} }) {
         }
 
         getShapePath(element) {
+
             // return this.bpmnRenderer.getShapePath(element);
             if (is(element, 'bpmn:Event')) {
                 return getCirclePath(element);

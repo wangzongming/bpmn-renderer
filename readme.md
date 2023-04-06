@@ -12,17 +12,17 @@ bpmn-renderer to solve the problem of bpmn.js style modification is troublesome.
 
 ## 支持
 
+-   🎉 Node Size: width and height configuration
 -   🎉 Node border: Border color, border thickness, border rounded corner, Shadow, shadow animation
 -   🎉 Node background: Background color
--   🎉 Text: text color, text size, font
+-   🎉 Text: text color, text size, font, position
 -   🎉 Connecting line: connecting line color, line thickness, arrow size
 -   🎉 ICONS: Flexible icon Settings
 
 Currently supported types: User task, Script task, Service task, text comment, dotted line connecting comment text, text label, connection line, Start node, End node, Boundary event, Gateway
 
 ## personally backing
-
--   🤔 Node width and height configuration
+ 
 -   🤔 More task nodes
 
 ## preview
@@ -83,6 +83,11 @@ Default style: All nodes are in over state
 Each element is divided into three states, the default being the will state (which can also be used for editing pages).
 
     {
+        
+        base: {
+            width: 100,
+            height: 80,
+        },
         will: {
             name: "未办理",
             // task node
@@ -100,6 +105,7 @@ Each element is divided into three states, the default being the will state (whi
                 // color: "red",
                 fontSize: 12,
                 fontFamily: "苹方,微软雅黑",
+				// textPosition: "bottom"
                 // 阴影大小
                 boxShadowSize: 0,
 
@@ -140,6 +146,7 @@ Each element is divided into three states, the default being the will state (whi
                 height: 20,
                 color: "#a7b7cb",
                 left: 5, top: 5,
+				// center: true, 
                 /**
                 * svg ICONS for individual elements
                 * Must return a '<svg>... The </svg>' string cannot contain DOCTYPE xml tags

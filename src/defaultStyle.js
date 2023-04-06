@@ -1,17 +1,22 @@
 
 import userIcon from "./icon/user"
+import userGroup from "./icon/user_group"
 import guidang from "./icon/guidang"
 import chuanyue from "./icon/chuanyue"
 import scriptIcon from "./icon/jiaobenrenwu"
 import fuwuliu from "./icon/fuwuliu"
-import wubianxing from "./icon/wubianxing"
+// import wubianxing from "./icon/wubianxing"
 
 export default {
+    base: {
+        width: 100,
+        height: 80,
+    },
     // 默认样式
     will: {
         name: "未办理",
         // 节点
-        node: { 
+        node: {
             backgroundColor: "#fff",
             borderColor: "#dae2ec",
             borderRadius: 10,
@@ -21,6 +26,8 @@ export default {
             // color: "red",
             fontSize: 12,
             fontFamily: "苹方,微软雅黑",
+            // 文字位置  top | bottom | center
+            textPosition: "center",
             // 阴影大小
             boxShadowSize: 0,
 
@@ -50,9 +57,9 @@ export default {
             backgroundColor: "#bfcbd9",
             // 转角连接类型  "L" 直线 | "C" 曲线,
             joinStyle: "C",
-            // 箭头宽高， 必须为数字（单位 px）
-            arrowsWidth: 12,
-            arrowsHeight: 12,
+            // 箭头宽高， 必须为数字（单位 px） 
+            arrowsWidth: 6,
+            arrowsHeight: 6,
         },
         // 图标颜色
         icon: {
@@ -60,12 +67,14 @@ export default {
             height: 20,
             color: "#a7b7cb",
             left: 5, top: 5,
-            // 网关
-            'bpmn:ExclusiveGateway': {
-                color: "#FFD400",
-                width: 25,
-                height: 25,
-            },
+            // 图标居中
+            center: false,
+            // // 网关
+            // 'bpmn:ExclusiveGateway': {
+            //     color: "#FFD400",
+            //     width: 25,
+            //     height: 25,
+            // },
             /**
              * 各个元素的svg图标
              * 必须返回 一个 '<svg>...</svg>' 字符串
@@ -73,16 +82,21 @@ export default {
             svgs: {
                 // 用户任务
                 'bpmn:UserTask': ({ element }) => {
+                    // 串行、并行、循环时用用户组图标
+                    if (element.businessObject.loopCharacteristics) {
+                        return userGroup;
+                    }
                     const nodeType = element.businessObject["userTaskType"];
                     return {
                         "1": chuanyue,
                         "2": guidang
-                    }[nodeType] || userIcon;
+                    }[nodeType] || userIcon; 
                 },
                 'bpmn:ScriptTask': ({ element }) => scriptIcon,
                 'bpmn:ServiceTask': ({ element }) => fuwuliu,
                 // 网关内部小图标
-                'bpmn:ExclusiveGateway': ({ element }) => wubianxing,
+                // 'bpmn:ExclusiveGateway': ({ element }) => wubianxing,
+                // 'bpmn:ParallelGateway': ({ element }) => wubianxing,
             }
         },
     },
@@ -108,7 +122,7 @@ export default {
             'bpmn:StartEvent': {
                 backgroundColor: "rgb(225, 250, 245)",
                 borderColor: "rgb(67, 220, 188)",
-            }, 
+            },
         },
         // 节点连接线/箭头
         arrows: {
@@ -126,7 +140,7 @@ export default {
             width: 20,
             height: 20,
             color: "rgb(67, 220, 188)",
-            left: 5, top: 5, 
+            left: 5, top: 5,
             /**
              * 各个元素的svg图标
              * 必须返回 一个 '<svg>...</svg>' 字符串
@@ -143,17 +157,17 @@ export default {
                 'bpmn:ScriptTask': ({ element }) => scriptIcon,
                 'bpmn:ServiceTask': ({ element }) => fuwuliu,
                 // 网关内部小图标
-                'bpmn:ExclusiveGateway': ({ element }) => wubianxing,
+                // 'bpmn:ExclusiveGateway': ({ element }) => wubianxing,
             }
         },
     },
 
     // 闪烁样式
     ing: {
-        name: "正在办理", 
+        name: "正在办理",
 
-         // 节点
-         node: {
+        // 节点
+        node: {
             backgroundColor: "rgb(225, 250, 245)",
             borderColor: "rgb(67, 220, 188)",
             borderRadius: 10,
@@ -163,7 +177,7 @@ export default {
             fontSize: 12,
             fontFamily: "苹方,微软雅黑",
             // 阴影大小
-            boxShadowSize: 0, 
+            boxShadowSize: 0,
         },
         // 节点连接线/箭头
         arrows: {
@@ -181,7 +195,7 @@ export default {
             width: 20,
             height: 20,
             color: "rgb(67, 220, 188)",
-            left: 5, top: 5, 
+            left: 5, top: 5,
             /**
              * 各个元素的svg图标
              * 必须返回 一个 '<svg>...</svg>' 字符串
@@ -198,9 +212,8 @@ export default {
                 'bpmn:ScriptTask': ({ element }) => scriptIcon,
                 'bpmn:ServiceTask': ({ element }) => fuwuliu,
                 // 网关内部小图标
-                'bpmn:ExclusiveGateway': ({ element }) => wubianxing,
+                // 'bpmn:ExclusiveGateway': ({ element }) => wubianxing,
             }
         },
     }
 }
- 
