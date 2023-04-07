@@ -109,7 +109,12 @@ export function drawRect({ parentGfx, element, nodeStatus, baseStyle = {}, style
  * 文字标注绘制
 */
 export function renderTextAnnotation({ parentGfx, element, thisContext, styleConfig }) {
-    const { borderColor, borderWidth, backgroundColor } = styleConfig;
+    const { type } = element;
+    const privateStyle = styleConfig[type];
+    const { borderColor, borderWidth, backgroundColor } = {
+        ...styleConfig,
+        ...privateStyle
+    };
 
     /** 元素路径 **/
     const pathData = getRectPath(assign({}, element, { x: 0, y: 0 }));
@@ -190,14 +195,14 @@ export const renderEmbeddedLabel = ({ parentGfx, element, align, thisContext, st
     const box = { ...(bounds || element) };
     const boxOtherStyle = {};
     let _align = align;
-    // 备注是存到了 text 中
+    // 备注是存到了 text 中，name 时不用换行
     return renderLabel(element, parentGfx, semantic.name || semantic.text, {
         box: {
             ...box,
             ...boxOtherStyle,
 
-            // 固定设置，避免 box k宽度太小了会导致文字折行
-            width: 100,
+            // 固定设置，避免 box k宽度太小了会导致文字折行。 +2 是假设字体左右间距 1px 
+            width: semantic.name ? `${semantic.name}`.length * (parseInt(fontSize) + 2) : 100,
         },
         // fitBox: true,
         align: _align,
@@ -242,8 +247,9 @@ export const renderExternalLabel = ({ parentGfx, element, thisContext, styleConf
 
 /**
  * 给元素绘制小图标
+ * @svgEle 传入后就直接使用即可
 */
-export function drawerIcon({ parentGfx, element, iconConfig, centered }) {
+export function drawerIcon({ parentGfx, element, iconConfig, centered, svgEle }) {
     const { type, width, height } = element;
 
     const privateIconConfig = iconConfig[type];
@@ -251,11 +257,15 @@ export function drawerIcon({ parentGfx, element, iconConfig, centered }) {
         ...iconConfig,
         ...privateIconConfig
     };
-    const iconPath = svgs[type]?.({ element });
-    if (!iconPath) return; // 没有就不渲染
     const iconSvg = svgCreate("g", { class: `${type}-icon` });
     svgAppend(parentGfx, iconSvg);
-    innerSVG(iconSvg, iconPath);
+    if(svgEle){ 
+        svgAppend(iconSvg, svgEle);
+    }else{ 
+        const iconPath = svgs[type]?.({ element });
+        if (!iconPath) return; // 没有就不渲染
+        innerSVG(iconSvg, iconPath);
+    }
     const iconPathEle = svgSelectAll(iconSvg, "svg");
     iconPathEle.forEach((ele) => {
         const attrs = {

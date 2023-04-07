@@ -19,7 +19,7 @@ bpmn-renderer to solve the problem of bpmn.js style modification is troublesome.
 -   🎉 Connecting line: connecting line color, line thickness, arrow size
 -   🎉 ICONS: Flexible icon Settings
 
-Currently supported types: User task, Script task, Service task, text comment, dotted line connecting comment text, text label, connection line, Start node, End node, Boundary event, Gateway
+Currently supported types: User task, Script task, Service task, text comment, dotted line connecting comment text, text label, connection line, Start node, End node, Boundary event, Gateway、SendTask、ReceiveTask、ManualTask、BusinessRuleTask
 
 ## personally backing
  

@@ -5,6 +5,10 @@ import guidang from "./icon/guidang"
 import chuanyue from "./icon/chuanyue"
 import scriptIcon from "./icon/jiaobenrenwu"
 import fuwuliu from "./icon/fuwuliu"
+import message from "./icon/message"
+import message_fill from "./icon/message_fill"
+import hander from "./icon/hander"
+import rule from "./icon/rule"
 // import wubianxing from "./icon/wubianxing"
 
 export default {
@@ -90,13 +94,15 @@ export default {
                     return {
                         "1": chuanyue,
                         "2": guidang
-                    }[nodeType] || userIcon; 
+                    }[nodeType] || userIcon;
                 },
                 'bpmn:ScriptTask': ({ element }) => scriptIcon,
                 'bpmn:ServiceTask': ({ element }) => fuwuliu,
-                // 网关内部小图标
-                // 'bpmn:ExclusiveGateway': ({ element }) => wubianxing,
-                // 'bpmn:ParallelGateway': ({ element }) => wubianxing,
+                'bpmn:SendTask': ({ element }) => message_fill,
+                'bpmn:ReceiveTask': ({ element }) => message,
+                'bpmn:ManualTask': ({ element }) => hander,
+                'bpmn:BusinessRuleTask':  ({ element }) => rule,
+                
             }
         },
     },
